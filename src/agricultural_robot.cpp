@@ -5,36 +5,13 @@
 
 
 ///////////////////////////////////////////////////////////////////////////	var. declaration
-#define PI 3.141592
-
 std_msgs::String mod_log;							// string for driving mod log publish	
 geometry_msgs::Twist vel;							// velocity for command publish
-geometry_msgs::Twist sel_vel;						// subscribed velocity
-geometry_msgs::Twist obj_vel;
-geometry_msgs::Twist con_vel;
 
 bool mod_flag=false;
 bool sel_flag=false;
 bool obj_flag=false;
 bool con_flag=true;
-
-
-
-
-
-
-bool ctrl_flag=true;								// control flag
-
-float rad;											// radius
-float th;											// theta
-
-//float vel=6000.0;									// motor velocity
-
-float left_v;
-float right_v;
-
-int mot1_v;
-int mot2_v;
 
 
 ///////////////////////////////////////////////////////////////////////////	sub, pub class
@@ -64,6 +41,13 @@ public:
 		sel_cmd_sub=nh.subscribe("vel_sel", 100, &sub_pub::sel_vel_callback, this);
 		obj_cmd_sub=nh.subscribe("vel_obj", 100, &sub_pub::obj_vel_callback, this);
 		con_cmd_sub=nh.subscribe("vel_con", 100, &sub_pub::con_vel_callback, this);
+		
+		vel.linear.x=0;								// velocity initialization
+		vel.linear.y=0;
+		vel.linear.z=0;
+		vel.angular.x=0;
+		vel.angular.y=0;
+		vel.angular.z=0;
 	}
 	
 	void mod_publish()								// driving mod publish func.
@@ -98,6 +82,10 @@ public:
 		{
 			obj_flag=false;
 			con_flag=false;
+			
+			vel.linear.x=0;
+			vel.angular.z=0;
+			vel_publish();
 		}
 	}
 	
@@ -127,32 +115,29 @@ public:
 	
 	void sel_vel_callback(const geometry_msgs::Twist::ConstPtr& cmd)	// vel call back func.
 	{
-		sel_vel.linear.x=cmd->linear.x;
-		sel_vel.linear.y=0;
-		sel_vel.linear.z=0;
-		sel_vel.angular.x=0;
-		sel_vel.angular.y=0;
-		sel_vel.angular.z=cmd->angular.z;
+		if(sel_flag==true)
+		{
+			vel.linear.x=cmd->linear.x;
+			vel.angular.z=cmd->angular.z;
+		}
 	}
 	
 	void obj_vel_callback(const geometry_msgs::Twist::ConstPtr& cmd)	// vel call back func.
 	{
-		sel_vel.linear.x=cmd->linear.x;
-		sel_vel.linear.y=0;
-		sel_vel.linear.z=0;
-		sel_vel.angular.x=0;
-		sel_vel.angular.y=0;
-		sel_vel.angular.z=cmd->angular.z;
+		if(obj_flag==true)
+		{
+			vel.linear.x=cmd->linear.x;
+			vel.angular.z=cmd->angular.z;
+		}
 	}
 	
 	void con_vel_callback(const geometry_msgs::Twist::ConstPtr& cmd)	// vel call back func.
 	{
-		sel_vel.linear.x=cmd->linear.x;
-		sel_vel.linear.y=0;
-		sel_vel.linear.z=0;
-		sel_vel.angular.x=0;
-		sel_vel.angular.y=0;
-		sel_vel.angular.z=-cmd->angular.z;
+		if(con_flag==true)
+		{
+			vel.linear.x=cmd->linear.x;
+			vel.angular.z=cmd->angular.z;
+		}
 	}
 };
 
@@ -169,7 +154,8 @@ int main(int argc, char **argv)
 	{
 		ros::spinOnce();			// run ros once
 		
-		sp.mod_publish();
+		sp.vel_publish();			// velocity command publish
+		sp.mod_publish();			// driving mod log publish
 		
 		loop_rate.sleep();			// sleep to keep the loop rate
 	}
