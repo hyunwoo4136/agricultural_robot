@@ -140,7 +140,11 @@ public:
 		if(con_flag==true)
 		{
 			vel.linear.x=cmd->linear.x;
-			vel.angular.z=cmd->angular.z;
+			
+			if(vel.linear.x<0)
+				vel.angular.z=-cmd->angular.z;
+			else
+				vel.angular.z=cmd->angular.z;
 		}
 	}
 };
