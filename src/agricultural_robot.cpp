@@ -145,19 +145,19 @@ public:
 ///////////////////////////////////////////////////////////////////////////	main function
 int main(int argc, char **argv)
 {
-	ros::init(argc, argv, "agricultural_robot");	// ros initialization
-	sub_pub sp;									// class object delaration
+	ros::init(argc, argv, "agricultural_robot");
+	sub_pub sp;										// class object delaration
 	
-	ros::Rate loop_rate(5);			// set 10ms loop rate
+	ros::Rate loop_rate(5);
 	
-	while(ros::ok())				// while loop
+	while(ros::ok())
 	{
-		ros::spinOnce();			// run ros once
+		ros::spinOnce();
 		
-		sp.vel_publish();			// velocity command publish
-		sp.mod_publish();			// driving mod log publish
+		sp.vel_publish();							// velocity command publish
+		sp.mod_publish();							// driving mod log publish
 		
-		loop_rate.sleep();			// sleep to keep the loop rate
+		loop_rate.sleep();
 	}
 	
 	return 0;					
