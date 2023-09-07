@@ -1,16 +1,34 @@
 #include <ros/ros.h>
 #include "std_msgs/Bool.h"
-#include "std_msgs/Float32.h"
+#include "std_msgs/String.h"
 #include <geometry_msgs/Twist.h>
 
+
+///////////////////////////////////////////////////////////////////////////	var. declaration
 #define PI 3.141592
 
-bool ctrl_flag=true;						// control flag
+std_msgs::String mod_log;							// string for driving mod log publish	
+geometry_msgs::Twist vel;							// velocity for command publish
+geometry_msgs::Twist sel_vel;						// subscribed velocity
+geometry_msgs::Twist obj_vel;
+geometry_msgs::Twist con_vel;
 
-float rad;							// radius
-float th;							// theta
+bool mod_flag=false;
+bool sel_flag=false;
+bool obj_flag=false;
+bool con_flag=true;
 
-float vel=6000.0;						// motor velocity
+
+
+
+
+
+bool ctrl_flag=true;								// control flag
+
+float rad;											// radius
+float th;											// theta
+
+//float vel=6000.0;									// motor velocity
 
 float left_v;
 float right_v;
@@ -18,90 +36,140 @@ float right_v;
 int mot1_v;
 int mot2_v;
 
-class publisher_subscriber					// class for pub, sub
+
+///////////////////////////////////////////////////////////////////////////	sub, pub class
+class sub_pub
 {
-	public:						// public member declaration
-		publisher_subscriber()		// substitute topics to publisher & subscriber
-		{
-			vel_l_pub=nh.advertise<std_msgs::Float32>("vel_l", 1);
-			vel_r_pub=nh.advertise<std_msgs::Float32>("vel_r", 1);
-			flag_sub=nh.subscribe("ctrl_flag", 1000, &publisher_subscriber::ctrl_flag_callback, this);
-			joy_sub=nh.subscribe("cmd_joy", 1000, &publisher_subscriber::joy_callback, this);
-		}
-		
-		void ctrl_flag_callback(const std_msgs::Bool::ConstPtr& flag) // ctrl flag call back func.
-		{
-			if(flag->data==true)
-    			{
-    				ctrl_flag=!ctrl_flag;
-    				ROS_INFO("%s", ctrl_flag ? "true" : "false");
-    			}
-		}
-		
-		void joy_callback(const geometry_msgs::Twist::ConstPtr& msg)
-		{	
-			std_msgs::Float32 vel_l;			// Float32 data type var.
-			std_msgs::Float32 vel_r;			// Float32 data type var.
-									
-			rad=sqrt((msg->linear.x)*(msg->linear.x)+(msg->angular.z)*(msg->angular.z));	// radius
-			th=atan2(msg->linear.x, msg->angular.z);	// theta
+private:
+	ros::NodeHandle nh;
+	ros::Publisher mod_pub;							// driving mod log publisher
+	ros::Publisher vel_pub;							// command velocity publisher
+	ros::Subscriber mod_sub;						// module operation command subscriber
+	ros::Subscriber sel_sub;						// self driving command subscriber
+	ros::Subscriber obj_sub;						// object following command subscriber
+	ros::Subscriber con_sub;						// controller command subscriber
+	ros::Subscriber sel_cmd_sub;					// self driving velocity subscriber
+	ros::Subscriber obj_cmd_sub;					// object following velocity subscruber
+	ros::Subscriber con_cmd_sub;					// controller joystick velocity subscriber
 	
-			if((th>=0.0) && (th<(PI/2)))			// 1st quadrant(up, left)
-			{
-				left_v=th*2*vel/(PI/2)-vel;
-				right_v=vel;
-			}
-			else if((th>=(PI/2)) && (th<PI))		// 2nd quadrant(up, right)
-			{
-				left_v=vel;
-				right_v=-th*2*vel/(PI/2)+vel*3;
-			}
-			else if((th>=(-PI/2)) && (th<0))		// 3rd quadrant(down, left)
-			{
-				left_v=th*2*vel/(PI/2)+vel;
-				right_v=-vel;
-			}
-			else if((th>=(-PI)) && (th<(-PI/2)))		// 4th quadrant(down, right)
-			{
-				left_v=-vel;
-				right_v=-th*2*vel/(PI/2)-vel*3;
-			}
+public:
+	sub_pub()										// class constructor
+	{
+		mod_pub=nh.advertise<std_msgs::String>("/log", 1);
+		vel_pub=nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
+		mod_sub=nh.subscribe("cmd_mod", 10, &sub_pub::mod_callback, this);
+		sel_sub=nh.subscribe("cmd_sel", 10, &sub_pub::sel_callback, this);
+		obj_sub=nh.subscribe("cmd_obj", 10, &sub_pub::obj_callback, this);
+		con_sub=nh.subscribe("cmd_con", 10, &sub_pub::con_callback, this);
+		sel_cmd_sub=nh.subscribe("vel_sel", 100, &sub_pub::sel_vel_callback, this);
+		obj_cmd_sub=nh.subscribe("vel_obj", 100, &sub_pub::obj_vel_callback, this);
+		con_cmd_sub=nh.subscribe("vel_con", 100, &sub_pub::con_vel_callback, this);
+	}
 	
-			left_v*=rad;
-			right_v*=rad;
-			
-			vel_l.data=left_v;				// left motor velocity
-    			vel_r.data=right_v;				// right motor velocity
-    			
-    			ROS_INFO("left: %f", vel_l.data);
-    			ROS_INFO("right: %f", vel_r.data);
-			
-			if(ctrl_flag==true)
-			{
-				vel_l_pub.publish(vel_l);		// publish the pos topic
-				vel_r_pub.publish(vel_r);		// publish the pos topic
-				ROS_INFO("sent command");
-			}
-		}
+	void mod_publish()								// driving mod publish func.
+	{
+		if(sel_flag==true)
+			mod_log.data="self driving";
+		else if(obj_flag==true)
+			mod_log.data="following object";
+		else if(con_flag==true)
+			mod_log.data="driving with joystick";
 		
-	private:					// private member declaration
-	  	ros::NodeHandle nh; 			// declare node handle
-		ros::Publisher vel_l_pub;		// declare publisher
-		ros::Publisher vel_r_pub;
-  		ros::Subscriber joy_sub;		// declare subscriber
-  		ros::Subscriber flag_sub;
+		mod_pub.publish(mod_log);
+	}
+	
+	void vel_publish()								// velocity publish func.
+	{
+		vel_pub.publish(vel);
+	}
+	
+	void mod_callback(const std_msgs::Bool::ConstPtr& msg)	// module command call back func.
+	{
+		if(msg->data==true)
+			mod_flag=!mod_flag;
+	}
+	
+	void sel_callback(const std_msgs::Bool::ConstPtr& msg)	// self driving cmd call back func.
+	{
+		if(msg->data==true)
+			sel_flag=!sel_flag;
+		
+		if(sel_flag==true)
+		{
+			obj_flag=false;
+			con_flag=false;
+		}
+	}
+	
+	void obj_callback(const std_msgs::Bool::ConstPtr& msg)	// obj. following cmd call back func.
+	{
+		if(msg->data==true)
+			obj_flag=!obj_flag;
+		
+		if(obj_flag==true)
+		{
+			sel_flag=false;
+			con_flag=false;
+		}
+	}
+	
+	void con_callback(const std_msgs::Bool::ConstPtr& msg)	// controller cmd call back func.
+	{
+		if(msg->data==true)
+			con_flag=!con_flag;
+		
+		if(con_flag==true)
+		{
+			sel_flag=false;
+			obj_flag=false;
+		}
+	}
+	
+	void sel_vel_callback(const geometry_msgs::Twist::ConstPtr& cmd)	// vel call back func.
+	{
+		sel_vel.linear.x=cmd->linear.x;
+		sel_vel.linear.y=0;
+		sel_vel.linear.z=0;
+		sel_vel.angular.x=0;
+		sel_vel.angular.y=0;
+		sel_vel.angular.z=cmd->angular.z;
+	}
+	
+	void obj_vel_callback(const geometry_msgs::Twist::ConstPtr& cmd)	// vel call back func.
+	{
+		sel_vel.linear.x=cmd->linear.x;
+		sel_vel.linear.y=0;
+		sel_vel.linear.z=0;
+		sel_vel.angular.x=0;
+		sel_vel.angular.y=0;
+		sel_vel.angular.z=cmd->angular.z;
+	}
+	
+	void con_vel_callback(const geometry_msgs::Twist::ConstPtr& cmd)	// vel call back func.
+	{
+		sel_vel.linear.x=cmd->linear.x;
+		sel_vel.linear.y=0;
+		sel_vel.linear.z=0;
+		sel_vel.angular.x=0;
+		sel_vel.angular.y=0;
+		sel_vel.angular.z=-cmd->angular.z;
+	}
 };
 
-int main(int argc, char **argv)			// main function
+
+///////////////////////////////////////////////////////////////////////////	main function
+int main(int argc, char **argv)
 {
-	ros::init(argc, argv, "mobile_joy_ctrl");	// ros initialization
-	publisher_subscriber pub_sub;			// class object delaration
+	ros::init(argc, argv, "agricultural_robot");	// ros initialization
+	sub_pub sp;									// class object delaration
 	
-	ros::Rate loop_rate(10);			// set 10ms loop rate
+	ros::Rate loop_rate(5);			// set 10ms loop rate
 	
 	while(ros::ok())				// while loop
 	{
-		ros::spinOnce();			// run ros once 
+		ros::spinOnce();			// run ros once
+		
+		sp.mod_publish();
 		
 		loop_rate.sleep();			// sleep to keep the loop rate
 	}
