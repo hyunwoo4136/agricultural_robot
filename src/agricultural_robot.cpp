@@ -5,11 +5,11 @@
 
 
 ///////////////////////////////////////////////////////////////////////////	var. declaration
-std_msgs::String mod_log;							// string for driving mod log publish	
+std_msgs::String drv_log;							// string for driving mod log publish
+std_msgs::Bool mod_flag;							// module operation flag to be published
 geometry_msgs::Twist vel;							// velocity for command publish
 
-bool mod_flag=false;
-bool sel_flag=false;
+bool sel_flag=false;								// driving mods flag
 bool obj_flag=false;
 bool con_flag=true;
 
@@ -19,7 +19,8 @@ class sub_pub
 {
 private:
 	ros::NodeHandle nh;
-	ros::Publisher mod_pub;							// driving mod log publisher
+	ros::Publisher drv_pub;							// driving mod log publisher
+	ros::Publisher mod_pub;							// module operation flag publisher
 	ros::Publisher vel_pub;							// command velocity publisher
 	ros::Subscriber mod_sub;						// module operation command subscriber
 	ros::Subscriber sel_sub;						// self driving command subscriber
@@ -32,7 +33,8 @@ private:
 public:
 	sub_pub()										// class constructor
 	{
-		mod_pub=nh.advertise<std_msgs::String>("/log", 1);
+		drv_pub=nh.advertise<std_msgs::String>("/log", 1);
+		mod_pub=nh.advertise<std_msgs::Bool>("mod_flag", 1);
 		vel_pub=nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
 		mod_sub=nh.subscribe("cmd_mod", 10, &sub_pub::mod_callback, this);
 		sel_sub=nh.subscribe("cmd_sel", 10, &sub_pub::sel_callback, this);
@@ -50,16 +52,16 @@ public:
 		vel.angular.z=0;
 	}
 	
-	void mod_publish()								// driving mod publish func.
+	void drv_publish()								// driving mod publish func.
 	{
 		if(sel_flag==true)
-			mod_log.data="self driving";
+			drv_log.data="self driving";
 		else if(obj_flag==true)
-			mod_log.data="following object";
+			drv_log.data="following object";
 		else if(con_flag==true)
-			mod_log.data="driving with joystick";
+			drv_log.data="driving with joystick";
 		
-		mod_pub.publish(mod_log);
+		drv_pub.publish(drv_log);
 	}
 	
 	void vel_publish()								// velocity publish func.
@@ -70,7 +72,9 @@ public:
 	void mod_callback(const std_msgs::Bool::ConstPtr& msg)	// module command call back func.
 	{
 		if(msg->data==true)
-			mod_flag=!mod_flag;
+			mod_flag.data=!mod_flag.data;
+		
+		mod_pub.publish(mod_flag);
 	}
 	
 	void sel_callback(const std_msgs::Bool::ConstPtr& msg)	// self driving cmd call back func.
@@ -155,7 +159,7 @@ int main(int argc, char **argv)
 		ros::spinOnce();
 		
 		sp.vel_publish();							// velocity command publish
-		sp.mod_publish();							// driving mod log publish
+		sp.drv_publish();							// driving mod log publish
 		
 		loop_rate.sleep();
 	}
