@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<launch>
+  <node name="agricultural_robot" pkg="agricultural_robot" type="agricultural_robot" output="screen" >
+  </node>
+</launch>
