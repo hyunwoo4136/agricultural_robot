@@ -1,17 +1,21 @@
 #include <ros/ros.h>
 #include "std_msgs/Bool.h"
+#include "std_msgs/Int16.h"
 #include "std_msgs/String.h"
 #include <geometry_msgs/Twist.h>
 
 
 ///////////////////////////////////////////////////////////////////////////	var. declaration
 std_msgs::String drv_log;							// string for driving mod log publish
+std_msgs::Int16 dyn_pos;							// position for dynamixel cmd publish
 std_msgs::Bool mod_flag;							// module operation flag to be published
-geometry_msgs::Twist vel;							// velocity for command publish
+geometry_msgs::Twist vel;							// velocity command to be published
 
 bool sel_flag=false;								// driving mods flag
 bool obj_flag=false;
 bool con_flag=true;
+
+int pos;
 
 
 ///////////////////////////////////////////////////////////////////////////	sub, pub class
@@ -20,6 +24,7 @@ class sub_pub
 private:
 	ros::NodeHandle nh;
 	ros::Publisher drv_pub;							// driving mod log publisher
+	ros::Publisher dyn_pub;							// dynamixel position publisher
 	ros::Publisher mod_pub;							// module operation flag publisher
 	ros::Publisher vel_pub;							// command velocity publisher
 	ros::Subscriber mod_sub;						// module operation command subscriber
@@ -34,6 +39,7 @@ public:
 	sub_pub()										// class constructor
 	{
 		drv_pub=nh.advertise<std_msgs::String>("/log", 1);
+		dyn_pub=nh.advertise<std_msgs::Int16>("cmd_pos", 1);
 		mod_pub=nh.advertise<std_msgs::Bool>("mod_flag", 1);
 		vel_pub=nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
 		mod_sub=nh.subscribe("cmd_mod", 10, &sub_pub::mod_callback, this);
@@ -54,14 +60,12 @@ public:
 	
 	void drv_publish()								// driving mod publish func.
 	{
-		if(sel_flag==true)
-			drv_log.data="self driving";
-		else if(obj_flag==true)
-			drv_log.data="following object";
-		else if(con_flag==true)
-			drv_log.data="driving with joystick";
-		
 		drv_pub.publish(drv_log);
+	}
+	
+	void dyn_publish()								// dynamixel position publish func.
+	{
+		dyn_pub.publish(dyn_pos);
 	}
 	
 	void vel_publish()								// velocity publish func.
@@ -162,8 +166,25 @@ int main(int argc, char **argv)
 	{
 		ros::spinOnce();
 		
+		if(sel_flag==true)
+		{
+			drv_log.data="self driving";
+			dyn_pos.data=3584;
+		}
+		else if(obj_flag==true)
+		{
+			drv_log.data="following object";
+			dyn_pos.data=3072;
+		}
+		else if(con_flag==true)
+		{
+			drv_log.data="driving with joystick";
+			dyn_pos.data=3584;
+		}
+		
 		sp.vel_publish();							// velocity command publish
 		sp.drv_publish();							// driving mod log publish
+		sp.dyn_publish();							// dynamixel command publish
 		
 		loop_rate.sleep();
 	}
