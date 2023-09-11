@@ -14,7 +14,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(agricultural_robot src/agricultural_robot.cpp)
+add_executable(agricultural_robot src/main_control.cpp)
 
 target_link_libraries(agricultural_robot
   ${catkin_LIBRARIES}

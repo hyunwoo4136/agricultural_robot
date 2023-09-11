@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<launch>
+  <node name="main_control" pkg="agricultural_robot" type="agricultural_robot" output="screen" >
+  </node>
+  
+  <include file="$(find mw_mdc24d200d_ctrl)/launch/mw_mdc24d200d_ctrl.launch">
+  </include>
+  
+  <include file="$(find ydlidar_ros_driver)/launch/X2.launch">
+  </include>
+  
+  <include file="$(find self_drive_in_furrow)/launch/self_drive_in_furrow.launch">
+  </include>
+  
+  <include file="$(find object_following)/launch/object_following.launch">
+  </include>
+  
+  <include file="$(find dynamixel_workbench_controllers)/launch/dynamixel_controllers.launch">
+  </include>
+  
+  <include file="$(find dynamixel_pos_ctrl)/launch/dynamixel_pos_ctrl.launch">
+  </include>
+</launch>

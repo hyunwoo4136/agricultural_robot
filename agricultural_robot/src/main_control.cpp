@@ -15,6 +15,8 @@ bool sel_flag=false;								// driving mods flag
 bool obj_flag=false;
 bool con_flag=true;
 
+bool fur_exi_flag=false;							// furrow existance flag
+
 int pos;
 
 
@@ -27,7 +29,9 @@ private:
 	ros::Publisher dyn_pub;							// dynamixel position publisher
 	ros::Publisher mod_pub;							// module operation flag publisher
 	ros::Publisher vel_pub;							// command velocity publisher
+	
 	ros::Subscriber mod_sub;						// module operation command subscriber
+	ros::Subscriber fur_sub;						// furrow existance flag subscriber
 	ros::Subscriber sel_sub;						// self driving command subscriber
 	ros::Subscriber obj_sub;						// object following command subscriber
 	ros::Subscriber con_sub;						// controller command subscriber
@@ -42,7 +46,9 @@ public:
 		dyn_pub=nh.advertise<std_msgs::Int16>("cmd_pos", 1);
 		mod_pub=nh.advertise<std_msgs::Bool>("mod_flag", 1);
 		vel_pub=nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
+		
 		mod_sub=nh.subscribe("cmd_mod", 10, &sub_pub::mod_callback, this);
+		fur_sub=nh.subscribe("fur_exi", 10, &sub_pub::fur_callback, this);
 		sel_sub=nh.subscribe("cmd_sel", 10, &sub_pub::sel_callback, this);
 		obj_sub=nh.subscribe("cmd_obj", 10, &sub_pub::obj_callback, this);
 		con_sub=nh.subscribe("cmd_con", 10, &sub_pub::con_callback, this);
@@ -81,6 +87,21 @@ public:
 		mod_pub.publish(mod_flag);
 	}
 	
+	void fur_callback(const std_msgs::Bool::ConstPtr& msg)	// furrow existance call back func.
+	{
+		fur_exi_flag=msg->data;
+		
+		if((fur_exi_flag==false) && (sel_flag==true))
+		{
+			sel_flag=false;
+			con_flag=true;
+			
+			vel.linear.x=0;
+			vel.angular.z=0;
+			vel_publish();
+		}
+	}
+	
 	void sel_callback(const std_msgs::Bool::ConstPtr& msg)	// self driving cmd call back func.
 	{
 		if(msg->data==true)
@@ -90,10 +111,6 @@ public:
 		{
 			obj_flag=false;
 			con_flag=false;
-			
-			vel.linear.x=0;
-			vel.angular.z=0;
-			vel_publish();
 		}
 	}
 	
@@ -118,6 +135,10 @@ public:
 		{
 			sel_flag=false;
 			obj_flag=false;
+			
+			vel.linear.x=0;
+			vel.angular.z=0;
+			vel_publish();
 		}
 	}
 	
@@ -157,7 +178,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////	main function
 int main(int argc, char **argv)
 {
-	ros::init(argc, argv, "agricultural_robot");
+	ros::init(argc, argv, "main_control");
 	sub_pub sp;										// class object delaration
 	
 	ros::Rate loop_rate(5);
