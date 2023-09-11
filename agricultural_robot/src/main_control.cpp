@@ -200,7 +200,7 @@ int main(int argc, char **argv)
 		else if(con_flag==true)
 		{
 			drv_log.data="driving with joystick";
-			dyn_pos.data=3584;
+			dyn_pos.data=35;
 		}
 		
 		sp.vel_publish();							// velocity command publish
