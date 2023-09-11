@@ -1,0 +1,12 @@
+[submodule "object_following"]
+	path = object_following
+	url = https://github.com/hyunwoo4136/object_following.git
+[submodule "mw_mdc24d200d_ctrl"]
+	path = mw_mdc24d200d_ctrl
+	url = https://github.com/hyunwoo4136/mw_mdc24d200d_ctrl.git
+[submodule "self_drive_in_furrow"]
+	path = self_drive_in_furrow
+	url = https://github.com/hyunwoo4136/self_drive_in_furrow.git
+[submodule "dynamixel_pos_ctrl"]
+	path = dynamixel_pos_ctrl
+	url = https://github.com/hyunwoo4136/dynamixel_pos_ctrl.git
