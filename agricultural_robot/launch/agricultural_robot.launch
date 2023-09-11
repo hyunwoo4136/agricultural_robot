@@ -16,9 +16,6 @@
   <include file="$(find object_following)/launch/object_following.launch">
   </include>
   
-  <include file="$(find dynamixel_workbench_controllers)/launch/dynamixel_controllers.launch">
-  </include>
-  
   <include file="$(find dynamixel_pos_ctrl)/launch/dynamixel_pos_ctrl.launch">
   </include>
 </launch>
