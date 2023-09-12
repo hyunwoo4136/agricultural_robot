@@ -44,7 +44,7 @@ public:
 	{
 		drv_pub=nh.advertise<std_msgs::String>("/log", 1);
 		dyn_pub=nh.advertise<std_msgs::Int16>("cmd_pos", 1);
-		mod_pub=nh.advertise<std_msgs::Bool>("mod_flag", 1);
+		mod_pub=nh.advertise<std_msgs::Bool>("d_out", 1);
 		vel_pub=nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
 		
 		mod_sub=nh.subscribe("cmd_mod", 10, &sub_pub::mod_callback, this);
